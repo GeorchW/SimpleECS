@@ -12,8 +12,8 @@ namespace SimpleECS.Test
         [SetUp]
         public void Setup()
         {
-            Scene scene = new Scene();
-            var entity = scene.CreateEntity();
+            scene = new Scene();
+            entity = scene.CreateEntity();
 
             entity.Add<ExampleComp1>() = new ExampleComp1 { Value1 = 5, Value2 = 6 };
             entity.Add<ExampleComp2>() = new ExampleComp2 { Value3 = 5.5f, Value4 = 6.3f };
@@ -21,7 +21,6 @@ namespace SimpleECS.Test
         [Test]
         public void Storage()
         {
-
             Assert.That(entity.Get<ExampleComp1>().Value1, Is.EqualTo(5));
             Assert.That(entity.Get<ExampleComp1>().Value2, Is.EqualTo(6));
             Assert.That(entity.Get<ExampleComp2>().Value3, Is.EqualTo(5.5f));

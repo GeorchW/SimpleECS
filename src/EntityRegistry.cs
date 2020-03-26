@@ -33,7 +33,6 @@ namespace SimpleECS
                 count++;
             }
             Locations[id] = new EntityLocation(container, index);
-            Versions[id]++;
             return new Entity(id, Versions[id]);
         }
         public void UnregisterEntity(Entity entity, out EntityLocation lastLocation)
@@ -42,6 +41,7 @@ namespace SimpleECS
                 throw new Exception("The entity was already deleted.");
             lastLocation = Locations[entity.Id];
             Locations[entity.Id] = default;
+            Versions[entity.Id]++;
             freeIDs.Enqueue(entity.Id);
         }
         public void MoveEntity(int entity, ArchetypeContainer newContainer, int newIndex)
