@@ -5,7 +5,7 @@ namespace SimpleECS.Test
 {
     struct ExampleComp1 { public int Value1, Value2; }
     struct ExampleComp2 { public float Value3, Value4; }
-    public class Tests
+    public class Archetypes
     {
         Scene scene;
         Entity entity;
