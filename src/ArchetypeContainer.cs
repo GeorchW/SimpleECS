@@ -9,8 +9,9 @@ namespace SimpleECS
         internal Dictionary<Type, Array> arrays = new Dictionary<Type, Array>();
         internal Dictionary<(int, Type), ArrayElementRef> additions = new Dictionary<(int, Type), ArrayElementRef>();
         internal HashSet<(int, Type)> removals = new HashSet<(int, Type)>();
+        int[] entityIds;
         public int EntityCount { get; private set; } = 0;
-        int highestEntityId = -1;
+        int highestIndex = -1;
         int capacity = 64;
 
         Queue<int> freeSlots = new Queue<int>();
@@ -20,6 +21,7 @@ namespace SimpleECS
         internal ArchetypeContainer(Scene scene)
         {
             this.scene = scene;
+            entityIds = new int[capacity];
         }
 
         public void AddComponentToAllEntities(Type componentType)
@@ -101,29 +103,33 @@ namespace SimpleECS
         internal void RemoveEntity(int index)
         {
             EntityCount--;
-            if (index == highestEntityId)
-                highestEntityId--;
+            if (index == highestIndex)
+                highestIndex--;
             else
                 freeSlots.Enqueue(index);
         }
 
-        internal int AddEntity()
+        internal int AddEntity(int id)
         {
             EntityCount++;
-            if (freeSlots.TryDequeue(out int index))
-                return index;
-            else
+            if (!freeSlots.TryDequeue(out int index))
             {
-                highestEntityId++;
+                highestIndex++;
                 EnsureCapacity();
-                return highestEntityId;
+                index = highestIndex;
             }
+
+            entityIds[index] = id;
+
+            return index;
         }
+
+        public int GetEntityId(int index) => entityIds[index];
 
         private void EnsureCapacity()
         {
             bool increasedCapacity = false;
-            while (highestEntityId >= capacity)
+            while (highestIndex >= capacity)
             {
                 capacity *= 2;
                 increasedCapacity = true;
@@ -146,6 +152,7 @@ namespace SimpleECS
                     array.CopyTo(newArray, 0);
                     return newArray;
                 });
+                Array.Resize(ref entityIds, capacity);
             }
         }
 
@@ -161,24 +168,27 @@ namespace SimpleECS
                 for (int i = 0; i < indices.Length; i++)
                 {
                     int index = indices[i];
-                    int swapTarget = highestEntityId;
+                    int swapTarget = highestIndex;
                     while (swapTarget == indices[^1])
                     {
                         indices = indices[0..^1];
-                        highestEntityId--;
+                        highestIndex--;
                         if (indices.Length == 0)
                             return;
                     }
 
                     foreach (var (type, array) in arrays)
                     {
-                        Array.Copy(array, highestEntityId, array, index, 1);
+                        Array.Copy(array, highestIndex, array, index, 1);
                     }
                     foreach (var (type, array) in arrays)
                     {
-                        Array.Clear(array, highestEntityId, 1);
+                        Array.Clear(array, highestIndex, 1);
                     }
-                    highestEntityId--;
+                    entityIds[index] = entityIds[highestIndex];
+                    entityIds[highestIndex] = -1;
+
+                    highestIndex--;
                 }
             }
         }

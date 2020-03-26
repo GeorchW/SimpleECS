@@ -7,12 +7,29 @@ namespace SimpleECS
     {
         Dictionary<ComponentSet.Readonly, ArchetypeContainer> archetypes = new Dictionary<ComponentSet.Readonly, ArchetypeContainer>();
 
-        public ArchetypeContainer InitialContainer { get; }
+        ArchetypeContainer InitialContainer { get; }
+
+        internal EntityRegistry EntityRegistry { get; } = new EntityRegistry();
 
         public Scene()
         {
             InitialContainer = new ArchetypeContainer(this);
             archetypes.Add(default, InitialContainer);
+            Entity.CurrentScene = this;
+        }
+
+        public Entity CreateEntity()
+        {
+            var entity = EntityRegistry.RegisterEntity(InitialContainer, 0);
+            int index = InitialContainer.AddEntity(entity.Id);
+            EntityRegistry.MoveEntity(entity.Id, InitialContainer, index);
+            return entity;
+        }
+
+        public void DeleteEntity(Entity entity)
+        {
+            EntityRegistry.UnregisterEntity(entity, out var lastLocation);
+            lastLocation.ArchetypeContainer.RemoveEntity(lastLocation.Index);
         }
 
         // This is where new components (that are not yet in the correct archetype) are stored.
@@ -109,13 +126,14 @@ namespace SimpleECS
                     if (newArchetype == archetype)
                         continue;
 
-                    int newEntityIndex = newArchetype.AddEntity();
+                    int id = archetype.GetEntityId(index);
+                    int newIndex = newArchetype.AddEntity(id);
                     foreach (var (type, component) in newComponents)
                     {
-                        component.CopyTo(newArchetype.GetArray(type), newEntityIndex);
+                        component.CopyTo(newArchetype.GetArray(type), newIndex);
                     }
-
                     archetype.RemoveEntity(index);
+                    EntityRegistry.MoveEntity(id, newArchetype, newIndex);
                 }
             }
 
