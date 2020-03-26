@@ -157,5 +157,10 @@ namespace SimpleECS
             newArchetypes.Add(copy.AsReadOnly(), newArchetype);
             return newArchetype;
         }
+
+        public void Run<T>(T obj, string kernelName)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
