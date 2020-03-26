@@ -5,7 +5,7 @@ namespace SimpleECS
 {
     class Scene
     {
-        Dictionary<ComponentSet.Readonly, ArchetypeContainer> archetypes = new Dictionary<ComponentSet.Readonly, ArchetypeContainer>();
+        internal Dictionary<ComponentSet.Readonly, ArchetypeContainer> archetypes = new Dictionary<ComponentSet.Readonly, ArchetypeContainer>();
 
         ArchetypeContainer InitialContainer { get; }
 
@@ -158,9 +158,7 @@ namespace SimpleECS
             return newArchetype;
         }
 
-        public void Run<T>(T obj, string kernelName)
-        {
-            throw new NotImplementedException();
-        }
+        KernelRunner kernelRunner = new KernelRunner();
+        public void Run<T>(T obj, string kernelName) => kernelRunner.Run(obj, kernelName, this);
     }
 }
