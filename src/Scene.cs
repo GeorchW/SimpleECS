@@ -105,8 +105,11 @@ namespace SimpleECS
                 }
                 foreach (var (index, type) in archetype.removals)
                     GetNewComponentSet(index).Remove(type);
+                archetype.removals.Clear();
+
                 foreach (var ((index, type), value) in archetype.additions)
                     GetNewComponentSet(index).Add(type, value);
+                archetype.additions.Clear();
 
                 foreach (var (index, newComponents) in changedEntities)
                 {
