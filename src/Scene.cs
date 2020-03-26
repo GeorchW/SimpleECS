@@ -141,6 +141,7 @@ namespace SimpleECS
             {
                 archetypes.Add(k, v);
             }
+            newArchetypes.Clear();
         }
 
         Dictionary<ComponentSet.Readonly, ArchetypeContainer> newArchetypes = new Dictionary<ComponentSet.Readonly, ArchetypeContainer>();

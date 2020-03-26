@@ -48,5 +48,7 @@ namespace SimpleECS
             return ref loc.ArchetypeContainer.GetOrAdd<T>(loc.Index);
         }
         public void Delete() => CurrentScene.DeleteEntity(this);
+
+        public override string ToString() => $"Entity {Id} (v{Version})";
     }
 }

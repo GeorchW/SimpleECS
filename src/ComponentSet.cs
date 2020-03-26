@@ -24,13 +24,11 @@ namespace SimpleECS
             if (components == null)
                 components = new HashSet<Type>();
             components.Add(type);
+            hash ^= type.GetHashCode();
         }
         public Readonly AsReadOnly() => new Readonly(this);
 
-        public override int GetHashCode()
-        {
-            return HashCode.Combine(components, hash);
-        }
+        public override int GetHashCode() => hash;
 
         public static bool operator ==(in ComponentSet left, in ComponentSet right)
         {
@@ -53,6 +51,8 @@ namespace SimpleECS
 
         IEnumerator IEnumerable.GetEnumerator() => components?.GetEnumerator() ?? Enumerable.Empty<Type>().GetEnumerator();
 
+        public override string ToString() => components != null ? $"{{{string.Join(", ", components)}}}" : "{}";
+
         public readonly struct Readonly : IEquatable<Readonly>
         {
             private readonly ComponentSet componentSet;
@@ -74,6 +74,8 @@ namespace SimpleECS
                 foreach(var component in componentSet)
                     newSet.Add(component);
             }
+
+            public override string ToString() => componentSet.ToString() + " (read-only)";
         }
     }
 }
