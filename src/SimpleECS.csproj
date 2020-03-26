@@ -12,5 +12,10 @@
       <_Parameter1>SimpleECS.Test</_Parameter1>
     </AssemblyAttribute>
   </ItemGroup>
+  
+
+  <ItemGroup>
+    <PackageReference Include="Sigil" Version="5.0.0" />
+  </ItemGroup>
 
 </Project>

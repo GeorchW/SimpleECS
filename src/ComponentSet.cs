@@ -76,6 +76,8 @@ namespace SimpleECS
             }
 
             public override string ToString() => componentSet.ToString() + " (read-only)";
+
+            public bool Has(Type type) => componentSet.components?.Contains(type) ?? false;
         }
     }
 }
