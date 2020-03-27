@@ -10,7 +10,7 @@ namespace SimpleECS
     {
         Dictionary<(Type, string), Delegate> kernelRunners = new Dictionary<(Type, string), Delegate>();
         delegate void SceneKernelRunner<T>(Scene scene, T obj);
-        delegate void ArchetypeKernelRunner<T>(ArchetypeContainer archetypeContainer, T obj);
+        delegate void ArchetypeKernelRunner<T>(ArchetypeContainer archetypeContainer, T obj, EntityRegistry registry);
         public void Run<T>(T obj, string kernelName, Scene scene)
         {
             if (!kernelRunners.TryGetValue((typeof(T), kernelName), out var runner))
@@ -37,11 +37,39 @@ namespace SimpleECS
             var requiredComponents = new List<Type>();
             var bannedComponents = new List<Type>();
             var createdComponents = new List<Type>();
-            var arrays = kernelParameters.Select(param =>
+
+            Action<Sigil.Local>[] paramLoaders = kernelParameters.Select(param =>
             {
-                if (param.ParameterType.IsByRef)
+                if (param.ParameterType == typeof(Entity))
+                {
+                    return (Action<Sigil.Local>)(index =>
+                    {
+                        // load ID
+                        var id = il.DeclareLocal<int>("id");
+                        il.LoadArgument(0);
+                        il.LoadLocal(index);
+                        il.Call(typeof(ArchetypeContainer).GetMethod(nameof(ArchetypeContainer.GetEntityId), BindingFlags.Public | BindingFlags.Instance));
+                        il.StoreLocal(id);
+
+                        // load version
+                        var version = il.DeclareLocal<int>("version");
+                        il.LoadArgument(2);
+                        il.LoadLocal(id);
+                        il.Call(typeof(EntityRegistry).GetMethod(nameof(EntityRegistry.GetVersion), BindingFlags.Public | BindingFlags.Instance));
+                        il.StoreLocal(version);
+
+                        il.WriteLine("Loaded entity {0} (v{1}) @ index {2}", id, version, index);
+
+                        il.LoadLocal(id);
+                        il.LoadLocal(version);
+                        il.NewObject<Entity, int, int>();
+                    });
+                }
+                else if (param.ParameterType.IsByRef)
                 {
                     Type elementType = param.ParameterType.GetElementType()!;
+                    if (elementType == typeof(Entity))
+                        throw new Exception("An entity parameter cannot be used in combination with ref, in or out.");
 
                     bool banned = param.GetCustomAttribute(typeof(BannedAttribute)) != null;
 
@@ -58,16 +86,21 @@ namespace SimpleECS
                         createdComponents.Add(elementType);
                     }
                     Type arrayType = elementType.MakeArrayType();
-                    var local = il.DeclareLocal(arrayType);
+                    var array = il.DeclareLocal(arrayType);
 
                     il.LoadArgument(0);
                     il.LoadConstant(elementType);
                     il.Call(typeof(Type).GetMethod(nameof(Type.GetTypeFromHandle)));
                     il.Call(typeof(ArchetypeContainer).GetMethod(nameof(ArchetypeContainer.GetArray), BindingFlags.NonPublic | BindingFlags.Instance)!);
                     il.CastClass(arrayType);
-                    il.StoreLocal(local);
+                    il.StoreLocal(array);
 
-                    return local;
+                    return (Action<Sigil.Local>)(i =>
+                    {
+                        il.LoadLocal(array);
+                        il.LoadLocal(i);
+                        il.LoadElementAddress(elementType);
+                    });
                 }
                 else throw new NotImplementedException();
             }).ToArray();
@@ -80,12 +113,8 @@ namespace SimpleECS
             il.For(length, i =>
             {
                 il.LoadArgument(1);
-                foreach (var array in arrays)
-                {
-                    il.LoadLocal(array);
-                    il.LoadLocal(i);
-                    il.LoadElementAddress(array.LocalType.GetElementType()!);
-                }
+                foreach (var paramLoader in paramLoaders)
+                    paramLoader(i);
                 il.Call(kernel);
             });
 
@@ -125,7 +154,7 @@ namespace SimpleECS
                                 archetypeWasManipulated = true;
                             }
                         }
-                        callerDelegate(archetype, obj);
+                        callerDelegate(archetype, obj, scene.EntityRegistry);
                     }
                 }
                 if (archetypeWasManipulated)
