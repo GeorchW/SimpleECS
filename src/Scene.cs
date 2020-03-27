@@ -11,6 +11,7 @@ namespace SimpleECS
         ArchetypeContainer InitialContainer { get; }
 
         internal EntityRegistry EntityRegistry { get; } = new EntityRegistry();
+        public GlobalStorage Globals { get; } = new GlobalStorage();
 
         public Scene()
         {
