@@ -33,7 +33,6 @@ namespace SimpleECS
             module.SetCustomAttribute(typeof(System.Security.UnverifiableCodeAttribute).GetConstructor(Type.EmptyTypes)!, new byte[0]);
 
             var il = Sigil.Emit<ArchetypeKernelRunner<T>>.NewDynamicMethod($"(* Archetype caller for {type.FullName}.{kernelName} *)", module);
-            il.WriteLine($"Running kernel {kernelName}...");
             ParameterInfo[] kernelParameters = kernel.GetParameters();
             var requiredComponents = new List<Type>();
             var arrays = kernelParameters.Select(param =>
@@ -74,7 +73,6 @@ namespace SimpleECS
                 il.Call(kernel);
             });
 
-            il.WriteLine($"Done with {kernelName}.");
             il.Return();
 
             var callerDelegate = il.CreateDelegate(out string instructions);
