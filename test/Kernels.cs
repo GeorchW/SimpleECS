@@ -26,12 +26,12 @@ namespace SimpleECS.Test
         [Test]
         public void RunKernel()
         {
-            scene.Run(this, nameof(Kernel));
+            scene.Run(this, nameof(SimpleKernel));
             Assert.That(e1.Get<ExampleComp2>().Value3, Is.EqualTo(10.5f));
             Assert.That(e2.Get<ExampleComp2>().Value3, Is.EqualTo(8.5f));
         }
 
-        void Kernel(in ExampleComp1 exampleComp1, ref ExampleComp2 exampleComp2)
+        void SimpleKernel(in ExampleComp1 exampleComp1, ref ExampleComp2 exampleComp2)
         {
             exampleComp2.Value3 += exampleComp1.Value1;
         }

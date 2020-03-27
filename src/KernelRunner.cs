@@ -22,11 +22,6 @@ namespace SimpleECS
             castedDelegate(scene, obj);
         }
 
-        private Type test()
-        {
-            return typeof(object);
-        }
-
         private SceneKernelRunner<T> CreateRunner<T>(string kernelName)
         {
             var type = typeof(T);
@@ -67,34 +62,18 @@ namespace SimpleECS
             il.Call(typeof(ArchetypeContainer).GetProperty(nameof(ArchetypeContainer.EntityCount))!.GetMethod);
             il.StoreLocal(length);
 
-            var i = il.DeclareLocal<int>("i");
-            il.LoadConstant(0);
-            il.StoreLocal(i);
-
-            var startLoop = il.DefineLabel("start");
-            var endLoop = il.DefineLabel("end");
-
-            il.MarkLabel(startLoop);
-            il.LoadLocal(i);
-            il.LoadLocal(length);
-            il.BranchIfGreaterOrEqual(endLoop);
-
-            il.LoadArgument(1);
-            foreach (var array in arrays)
+            il.For(length, i =>
             {
-                il.LoadLocal(array);
-                il.LoadLocal(i);
-                il.LoadElementAddress(array.LocalType.GetElementType()!);
-            }
-            il.Call(kernel);
+                il.LoadArgument(1);
+                foreach (var array in arrays)
+                {
+                    il.LoadLocal(array);
+                    il.LoadLocal(i);
+                    il.LoadElementAddress(array.LocalType.GetElementType()!);
+                }
+                il.Call(kernel);
+            });
 
-            il.LoadLocal(i);
-            il.LoadConstant(1);
-            il.Add();
-            il.StoreLocal(i);
-
-            il.Branch(startLoop);
-            il.MarkLabel(endLoop);
             il.WriteLine($"Done with {kernelName}.");
             il.Return();
 
@@ -104,7 +83,6 @@ namespace SimpleECS
             {
                 Entity.CurrentScene = scene;
                 scene.UpdateArchetypes();
-                Console.WriteLine(scene.archetypes.Count);
                 foreach (var (set, archetype) in scene.archetypes)
                 {
                     bool shouldRun = true;
