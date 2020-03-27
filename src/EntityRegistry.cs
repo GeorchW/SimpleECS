@@ -23,6 +23,8 @@ namespace SimpleECS
         Queue<int> freeIDs = new Queue<int>();
         int count = 0;
 
+        public int GetVersion(int entity) => Versions[entity];
+
         public Entity RegisterEntity(ArchetypeContainer container, int index)
         {
             if (count == Locations.Length)

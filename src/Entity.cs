@@ -1,4 +1,5 @@
 using System;
+using System.Numerics;
 
 namespace SimpleECS
 {
@@ -9,6 +10,8 @@ namespace SimpleECS
 
         public int Id { get; }
         public int Version { get; }
+        public bool IsValid => CurrentScene.EntityRegistry.TryGetLocation(this, out _);
+
         internal Entity(int id, int version)
         {
             Id = id;
@@ -50,5 +53,10 @@ namespace SimpleECS
         public void Delete() => CurrentScene.DeleteEntity(this);
 
         public override string ToString() => $"Entity {Id} (v{Version})";
+
+        public override bool Equals(object? obj) => obj is Entity other && this == other;
+        public override int GetHashCode() => (int)(BitOperations.RotateLeft((uint)Id, 16) ^ Version);
+        public static bool operator ==(Entity left, Entity right) => left.Id == right.Id && left.Version == right.Version;
+        public static bool operator !=(Entity left, Entity right) => !(left == right);
     }
 }
