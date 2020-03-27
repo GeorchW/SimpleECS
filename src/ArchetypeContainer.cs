@@ -143,7 +143,7 @@ namespace SimpleECS
                 // won't have any writes into the old array that will 
                 // end up in the void soon.)
                 if (!scene.IsUpdatingArchetypes)
-                    scene.UpdateArchetypes();
+                    scene.InsertNewComponents();
 
                 arrays = arrays.ToDictionary(pair => pair.Key, pair =>
                 {
@@ -191,6 +191,23 @@ namespace SimpleECS
                     highestIndex--;
                 }
             }
+        }
+
+        internal static void BlockCopy(ArchetypeContainer source, ArchetypeContainer target, out int targetStartIndex)
+        {
+            source.DoCompaction();
+            target.DoCompaction();
+
+            targetStartIndex = target.EntityCount;
+            target.EntityCount += source.EntityCount;
+            target.EnsureCapacity();
+            foreach (var (type, sourceArray) in source.arrays)
+            {
+                var targetArray = target.GetArray(type);
+                Array.Copy(sourceArray, 0, targetArray, targetStartIndex, source.EntityCount);
+            }
+
+            Array.Copy(source.entityIds, 0, target.entityIds, targetStartIndex, source.EntityCount);
         }
     }
 }

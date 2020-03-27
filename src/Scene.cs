@@ -1,3 +1,4 @@
+using System.Linq;
 using System;
 using System.Collections.Generic;
 
@@ -76,14 +77,14 @@ namespace SimpleECS
         }
 
         internal bool IsUpdatingArchetypes { get; private set; } = false;
-        public void UpdateArchetypes()
+        public void InsertNewComponents()
         {
             IsUpdatingArchetypes = true;
-            UpdateArchetypesInternal();
+            InsertNewComponentsInternal();
             IsUpdatingArchetypes = false;
         }
 
-        void UpdateArchetypesInternal()
+        void InsertNewComponentsInternal()
         {
             //TODO: This is not as efficient as it could be (allocations etc.). May have to optimize at some point.
             foreach (var (set, archetype) in archetypes)
@@ -145,6 +146,36 @@ namespace SimpleECS
                 archetypes.Add(k, v);
             }
             newArchetypes.Clear();
+        }
+
+        internal void UpdateArchetypeDictionary()
+        {
+            var archetypesCopy = archetypes.Values.ToArray();
+
+            archetypes.Clear();
+            foreach (var archetype in archetypesCopy)
+            {
+                ComponentSet set = default;
+                foreach (var type in archetype.arrays.Keys)
+                {
+                    set.Add(type);
+                }
+
+                if (!archetypes.TryGetValue(set.AsReadOnly(), out var existingArchetype))
+                {
+                    archetypes.Add(set.AsReadOnly(), archetype);
+                }
+                else
+                {
+                    ArchetypeContainer.BlockCopy(archetype, existingArchetype, out int startIndex);
+                    for (int i = 0; i < archetype.EntityCount; i++)
+                    {
+                        int entity = archetype.GetEntityId(i);
+                        int newIndex = startIndex + i;
+                        EntityRegistry.MoveEntity(entity, existingArchetype, newIndex);
+                    }
+                }
+            }
         }
 
         Dictionary<ComponentSet.Readonly, ArchetypeContainer> newArchetypes = new Dictionary<ComponentSet.Readonly, ArchetypeContainer>();

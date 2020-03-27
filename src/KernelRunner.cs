@@ -35,12 +35,28 @@ namespace SimpleECS
             var il = Sigil.Emit<ArchetypeKernelRunner<T>>.NewDynamicMethod($"(* Archetype caller for {type.FullName}.{kernelName} *)", module);
             ParameterInfo[] kernelParameters = kernel.GetParameters();
             var requiredComponents = new List<Type>();
+            var bannedComponents = new List<Type>();
+            var createdComponents = new List<Type>();
             var arrays = kernelParameters.Select(param =>
             {
                 if (param.ParameterType.IsByRef)
                 {
                     Type elementType = param.ParameterType.GetElementType()!;
-                    requiredComponents.Add(elementType);
+
+                    bool banned = param.GetCustomAttribute(typeof(BannedAttribute)) != null;
+
+                    if (!param.IsOut)
+                    {
+                        if (banned)
+                            throw new Exception("Banned components must be marked with out.");
+                        requiredComponents.Add(elementType);
+                    }
+                    else
+                    {
+                        if (banned)
+                            bannedComponents.Add(elementType);
+                        createdComponents.Add(elementType);
+                    }
                     Type arrayType = elementType.MakeArrayType();
                     var local = il.DeclareLocal(arrayType);
 
@@ -80,22 +96,40 @@ namespace SimpleECS
             return (scene, obj) =>
             {
                 Entity.CurrentScene = scene;
-                scene.UpdateArchetypes();
+                scene.InsertNewComponents();
+                bool archetypeWasManipulated = false;
                 foreach (var (set, archetype) in scene.archetypes)
                 {
-                    bool shouldRun = true;
-                    foreach (var type in requiredComponents)
+                    bool ShouldRun()
                     {
-                        if (!set.Has(type))
+                        foreach (var type in requiredComponents)
                         {
-                            shouldRun = false;
-                            break;
+                            if (!set.Has(type))
+                                return false;
                         }
+                        foreach (var type in bannedComponents)
+                        {
+                            if (set.Has(type))
+                                return false;
+                        }
+                        return true;
                     }
-                    // TODO: check if we should run
-                    if (shouldRun)
+
+                    if (ShouldRun())
+                    {
+                        foreach (var type in createdComponents)
+                        {
+                            if (!set.Has(type))
+                            {
+                                archetype.AddComponentToAllEntities(type);
+                                archetypeWasManipulated = true;
+                            }
+                        }
                         callerDelegate(archetype, obj);
+                    }
                 }
+                if (archetypeWasManipulated)
+                    scene.UpdateArchetypeDictionary();
             };
         }
     }
