@@ -3,8 +3,8 @@ using NUnit.Framework;
 
 namespace SimpleECS.Test
 {
-    struct ExampleComp1 { public int Value1, Value2; }
-    struct ExampleComp2 { public float Value3, Value4; }
+    struct ExampleComp1 { public string Value; }
+    struct ExampleComp2 { public string Value; }
     public class Archetypes
     {
         Scene scene;
@@ -15,31 +15,27 @@ namespace SimpleECS.Test
             scene = new Scene();
             entity = scene.CreateEntity();
 
-            entity.Add<ExampleComp1>() = new ExampleComp1 { Value1 = 5, Value2 = 6 };
-            entity.Add<ExampleComp2>() = new ExampleComp2 { Value3 = 5.5f, Value4 = 6.3f };
+            entity.Add<ExampleComp1>() = new ExampleComp1 { Value = "Comp1 initial value" };
+            entity.Add<ExampleComp2>() = new ExampleComp2 { Value = "Comp2 initial value" };
         }
 
         [Test]
         public void Storage()
         {
-            Assert.That(entity.Get<ExampleComp1>().Value1, Is.EqualTo(5));
-            Assert.That(entity.Get<ExampleComp1>().Value2, Is.EqualTo(6));
-            Assert.That(entity.Get<ExampleComp2>().Value3, Is.EqualTo(5.5f));
-            Assert.That(entity.Get<ExampleComp2>().Value4, Is.EqualTo(6.3f));
+            Assert.That(entity.Get<ExampleComp1>().Value, Is.EqualTo("Comp1 initial value"));
+            Assert.That(entity.Get<ExampleComp2>().Value, Is.EqualTo("Comp2 initial value"));
 
-            scene.UpdateArchetypes();
+            scene.InsertNewComponents();
 
-            Assert.That(entity.Get<ExampleComp1>().Value1, Is.EqualTo(5));
-            Assert.That(entity.Get<ExampleComp1>().Value2, Is.EqualTo(6));
-            Assert.That(entity.Get<ExampleComp2>().Value3, Is.EqualTo(5.5f));
-            Assert.That(entity.Get<ExampleComp2>().Value4, Is.EqualTo(6.3f));
+            Assert.That(entity.Get<ExampleComp1>().Value, Is.EqualTo("Comp1 initial value"));
+            Assert.That(entity.Get<ExampleComp2>().Value, Is.EqualTo("Comp2 initial value"));
         }
 
         [TestCase(false), TestCase(true)]
         public void EntityDelete(bool update)
         {
             if (update)
-                scene.UpdateArchetypes();
+                scene.InsertNewComponents();
             entity.Delete();
             Assert.Throws<Exception>(() => entity.Get<ExampleComp1>());
         }
@@ -48,11 +44,11 @@ namespace SimpleECS.Test
         public void CorrectArchetypesCreated()
         {
             Assert.That(scene.archetypes.Count == 1);
-            scene.UpdateArchetypes();
+            scene.InsertNewComponents();
             Assert.That(scene.archetypes.Count == 2);
             
             var newEntity = scene.CreateEntity();
-            scene.UpdateArchetypes();
+            scene.InsertNewComponents();
             Assert.That(scene.archetypes.Count == 2);
 
             newEntity.Add<ExampleComp1>();
