@@ -90,7 +90,7 @@ namespace SimpleECS.Test
         {
             scene.Globals.Add(new List<int>());
             scene.Run(this, nameof(GlobalKernel));
-            Assert.That(scene.Globals.Get<List<int>>().Count == 3);
+            Assert.That(scene.Globals.Get<List<int>>().Count, Is.EqualTo(2));
         }
 
         void GlobalKernel(in ExampleComp2 exampleComp2, [Global] List<int> myGlobal)

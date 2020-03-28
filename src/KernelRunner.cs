@@ -38,6 +38,17 @@ namespace SimpleECS
             var bannedComponents = new List<Type>();
             var createdComponents = new List<Type>();
 
+            Sigil.Local? _globals = null;
+            Sigil.Local Globals()
+            {
+                if (_globals == null)
+                {
+                    il.LoadArgument(2);
+                    _globals = il.StoreInNewLocal(() => default(Scene)!.Globals, "globals");
+                }
+                return _globals;
+            }
+
             Action<Sigil.Local>[] paramLoaders = kernelParameters.Select(param =>
             {
                 if (param.ParameterType == typeof(Entity))
@@ -66,7 +77,12 @@ namespace SimpleECS
                 }
                 else if (param.GetCustomAttribute(typeof(GlobalAttribute)) != null)
                 {
-                    throw new NotImplementedException();
+                    var local = il.DeclareLocal(param.ParameterType, param.Name + " cached global item");
+                    il.LoadLocal(Globals());
+                    il.Call(typeof(GlobalStorage).GetMethod(nameof(GlobalStorage.Get), BindingFlags.Instance | BindingFlags.Public)!.MakeGenericMethod(param.ParameterType));
+                    il.StoreLocal(local);
+
+                    return _ => il.LoadLocal(local);
                 }
                 else if (param.ParameterType.IsByRef)
                 {
