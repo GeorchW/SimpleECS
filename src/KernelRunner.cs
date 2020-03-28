@@ -10,7 +10,7 @@ namespace SimpleECS
     {
         Dictionary<(Type, string), Delegate> kernelRunners = new Dictionary<(Type, string), Delegate>();
         delegate void SceneKernelRunner<T>(Scene scene, T obj);
-        delegate void ArchetypeKernelRunner<T>(ArchetypeContainer archetypeContainer, T obj, EntityRegistry registry);
+        delegate void ArchetypeKernelRunner<T>(ArchetypeContainer archetypeContainer, T obj, Scene scene);
         public void Run<T>(T obj, string kernelName, Scene scene)
         {
             if (!kernelRunners.TryGetValue((typeof(T), kernelName), out var runner))
@@ -42,6 +42,11 @@ namespace SimpleECS
             {
                 if (param.ParameterType == typeof(Entity))
                 {
+                    var registry = il.DeclareLocal<EntityRegistry>("registry");
+                    il.LoadArgument(2);
+                    il.Call(typeof(Scene).GetProperty(nameof(Scene.EntityRegistry), BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)!.GetMethod);
+                    il.StoreLocal(registry);
+
                     return (Action<Sigil.Local>)(index =>
                     {
                         // load ID
@@ -53,7 +58,7 @@ namespace SimpleECS
 
                         // load version
                         var version = il.DeclareLocal<int>("version");
-                        il.LoadArgument(2);
+                        il.LoadLocal(registry);
                         il.LoadLocal(id);
                         il.Call(typeof(EntityRegistry).GetMethod(nameof(EntityRegistry.GetVersion), BindingFlags.Public | BindingFlags.Instance));
                         il.StoreLocal(version);
@@ -64,6 +69,10 @@ namespace SimpleECS
                         il.LoadLocal(version);
                         il.NewObject<Entity, int, int>();
                     });
+                }
+                else if (param.GetCustomAttribute(typeof(GlobalAttribute)) != null)
+                {
+                    throw new NotImplementedException();
                 }
                 else if (param.ParameterType.IsByRef)
                 {
@@ -124,6 +133,7 @@ namespace SimpleECS
 
             return (scene, obj) =>
             {
+                var oldScene = Entity.CurrentScene;
                 Entity.CurrentScene = scene;
                 scene.InsertNewComponents();
                 bool archetypeWasManipulated = false;
@@ -154,11 +164,12 @@ namespace SimpleECS
                                 archetypeWasManipulated = true;
                             }
                         }
-                        callerDelegate(archetype, obj, scene.EntityRegistry);
+                        callerDelegate(archetype, obj, scene);
                     }
                 }
                 if (archetypeWasManipulated)
                     scene.UpdateArchetypeDictionary();
+                Entity.CurrentScene = oldScene;
             };
         }
     }
