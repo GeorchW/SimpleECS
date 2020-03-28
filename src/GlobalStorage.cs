@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace SimpleECS
 {
-    class GlobalStorage
+    public class GlobalStorage
     {
         Dictionary<Type, object> globals = new Dictionary<Type, object>();
         public void Add(object obj) => globals.Add(obj.GetType(), obj);

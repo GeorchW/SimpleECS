@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace SimpleECS
 {
-    class Scene
+    public class Scene
     {
         internal Dictionary<ComponentSet.Readonly, ArchetypeContainer> archetypes = new Dictionary<ComponentSet.Readonly, ArchetypeContainer>();
 
@@ -12,6 +12,7 @@ namespace SimpleECS
 
         internal EntityRegistry EntityRegistry { get; } = new EntityRegistry();
         public GlobalStorage Globals { get; } = new GlobalStorage();
+        public CallbackManager Callbacks { get; } = new CallbackManager();
 
         public Scene()
         {

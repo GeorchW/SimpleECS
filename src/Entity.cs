@@ -3,7 +3,7 @@ using System.Numerics;
 
 namespace SimpleECS
 {
-    readonly struct Entity
+    public readonly struct Entity
     {
         [ThreadStatic]
         internal static Scene CurrentScene = null!;
