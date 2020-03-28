@@ -1,3 +1,4 @@
+using System.Linq;
 using System;
 using System.Numerics;
 
@@ -11,6 +12,19 @@ namespace SimpleECS
         public int Id { get; }
         public int Version { get; }
         public bool IsValid => CurrentScene.EntityRegistry.TryGetLocation(this, out _);
+
+        /// <summary>
+        /// Lists all components in this entity, excluding recently added ones.
+        /// </summary>
+        [Obsolete("Do not use this property for non-debugging purposes - performance might be poor and it might give incorrect results.")]
+        public object[] Components
+        {
+            get
+            {
+                var loc = LocationOrThrow();
+                return LocationOrThrow().ArchetypeContainer.arrays.Values.Select(array => array.GetValue(loc.Index)!).ToArray();
+            }
+        }
 
         internal Entity(int id, int version)
         {
