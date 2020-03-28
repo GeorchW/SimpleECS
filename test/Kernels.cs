@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using NUnit.Framework;
 
 namespace SimpleECS.Test
@@ -82,6 +83,19 @@ namespace SimpleECS.Test
             Assert.That(entity.IsValid, "Entity is invalid");
             Assert.That(entity == e1 || entity == e2, "Wrong entity selected");
             component.Value = $"Entity{entity.Id} Comp2 new value";
+        }
+
+        [Test]
+        public void WithGlobal()
+        {
+            scene.Globals.Add(new List<int>());
+            scene.Run(this, nameof(GlobalKernel));
+            Assert.That(scene.Globals.Get<List<int>>().Count == 3);
+        }
+
+        void GlobalKernel(in ExampleComp2 exampleComp2, [Global] List<int> myGlobal)
+        {
+            myGlobal.Add(1);
         }
     }
 }
