@@ -1,4 +1,6 @@
+using System.Linq.Expressions;
 using System;
+using System.Reflection;
 
 namespace SimpleECS
 {
@@ -27,6 +29,19 @@ namespace SimpleECS
 
             il.Branch(startLoop);
             il.MarkLabel(endLoop);
+        }
+
+        public static Sigil.Local StoreInNewLocal<TEmit, TLocal>(this Sigil.Emit<TEmit> il, Expression<Func<TLocal>> propOrCall, string? name = null)
+        {
+            if (propOrCall.Body is MethodCallExpression call)
+                il.Call(call.Method);
+            else if(propOrCall.Body is MemberExpression member && member.Member is PropertyInfo prop)
+                il.Call(prop.GetMethod);
+            else
+                throw new NotImplementedException($"The expression \"{propOrCall.Body}\" (type: {propOrCall.Body.NodeType}) is not valid as a property or call.");
+            var local = il.DeclareLocal<TLocal>(name);
+            il.StoreLocal(local);
+            return local;
         }
     }
 }

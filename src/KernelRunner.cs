@@ -42,26 +42,20 @@ namespace SimpleECS
             {
                 if (param.ParameterType == typeof(Entity))
                 {
-                    var registry = il.DeclareLocal<EntityRegistry>("registry");
                     il.LoadArgument(2);
-                    il.Call(typeof(Scene).GetProperty(nameof(Scene.EntityRegistry), BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)!.GetMethod);
-                    il.StoreLocal(registry);
+                    var registry = il.StoreInNewLocal(() => default(Scene)!.EntityRegistry, "registry");
 
                     return (Action<Sigil.Local>)(index =>
                     {
                         // load ID
-                        var id = il.DeclareLocal<int>("id");
                         il.LoadArgument(0);
                         il.LoadLocal(index);
-                        il.Call(typeof(ArchetypeContainer).GetMethod(nameof(ArchetypeContainer.GetEntityId), BindingFlags.Public | BindingFlags.Instance));
-                        il.StoreLocal(id);
+                        var id = il.StoreInNewLocal(() => default(ArchetypeContainer)!.GetEntityId(default), "id");
 
                         // load version
-                        var version = il.DeclareLocal<int>("version");
                         il.LoadLocal(registry);
                         il.LoadLocal(id);
-                        il.Call(typeof(EntityRegistry).GetMethod(nameof(EntityRegistry.GetVersion), BindingFlags.Public | BindingFlags.Instance));
-                        il.StoreLocal(version);
+                        var version = il.StoreInNewLocal(() => default(EntityRegistry)!.GetVersion(default), "version");
 
                         il.WriteLine("Loaded entity {0} (v{1}) @ index {2}", id, version, index);
 
