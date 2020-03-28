@@ -21,5 +21,7 @@ namespace SimpleECS
                 removeCallbacks.Add(componentType, container = new CallbackContainer(componentType));
             return container;
         }
+
+        internal CallbackContainer? TryGet(Type componentType) => removeCallbacks.GetValueOrDefault(componentType);
     }
 }

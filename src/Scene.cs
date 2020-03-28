@@ -31,6 +31,21 @@ namespace SimpleECS
 
         public void DeleteEntity(Entity entity)
         {
+            if (!EntityRegistry.TryGetLocation(entity, out var location))
+                throw new Exception("The entity is already deleted.");
+            foreach (var type in location.ArchetypeContainer.arrays.Keys)
+            {
+                var callback = Callbacks.TryGet(type);
+                if (callback != null && !location.ArchetypeContainer.removals.Contains((location.Index, type)))
+                    callback?.OnComponentRemoved(this, entity);
+            }
+            foreach (var (index, type) in location.ArchetypeContainer.additions.Keys)
+            {
+                if(index == location.Index)
+                {
+                    Callbacks.TryGet(type)?.OnComponentRemoved(this, entity);
+                }
+            }
             EntityRegistry.UnregisterEntity(entity, out var lastLocation);
             lastLocation.ArchetypeContainer.RemoveEntity(lastLocation.Index);
         }

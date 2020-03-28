@@ -33,6 +33,7 @@ namespace SimpleECS
         public void Remove<T>() where T : struct
         {
             var loc = LocationOrThrow();
+            CurrentScene.Callbacks.Get(typeof(T)).OnComponentRemoved(CurrentScene, this);
             loc.ArchetypeContainer.Remove<T>(loc.Index);
         }
         public bool Has<T>() where T : struct

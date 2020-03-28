@@ -14,6 +14,7 @@ namespace SimpleECS.Test
         [SetUp]
         public void Setup()
         {
+            deletesCalled = 0;
             scene = new Scene();
 
             entity = scene.CreateEntity();
