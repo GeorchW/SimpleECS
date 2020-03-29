@@ -46,7 +46,7 @@ namespace SimpleECS.Test
             Assert.That(scene.archetypes.Count == 1);
             scene.InsertNewComponents();
             Assert.That(scene.archetypes.Count == 2);
-            
+
             var newEntity = scene.CreateEntity();
             scene.InsertNewComponents();
             Assert.That(scene.archetypes.Count == 2);
@@ -54,6 +54,12 @@ namespace SimpleECS.Test
             newEntity.Add<ExampleComp1>();
             newEntity.Add<ExampleComp2>();
             Assert.That(scene.archetypes.Count == 2);
+        }
+
+        [Test]
+        public void EnumerateEntities()
+        {
+            Assert.That(scene, Is.EquivalentTo(new[] { entity }));
         }
     }
 }

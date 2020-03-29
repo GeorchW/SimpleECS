@@ -1,9 +1,10 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 
 namespace SimpleECS
 {
-    class EntityRegistry
+    class EntityRegistry : IReadOnlyCollection<Entity>
     {
         public struct EntityLocation
         {
@@ -20,19 +21,29 @@ namespace SimpleECS
         private const int InitialCapacity = 512;
         EntityLocation[] Locations = new EntityLocation[InitialCapacity];
         int[] Versions = new int[InitialCapacity];
-        Queue<int> freeIDs = new Queue<int>();
-        int count = 0;
+        HashSet<int> freeIDs = new HashSet<int>();
+        int nextId = 0;
+
+        public int Count => nextId - freeIDs.Count;
 
         public int GetVersion(int entity) => Versions[entity];
 
         public Entity RegisterEntity(ArchetypeContainer container, int index)
         {
-            if (count == Locations.Length)
+            if (nextId == Locations.Length)
                 Array.Resize(ref Locations, Locations.Length * 2);
-            if (!freeIDs.TryDequeue(out int id))
+            int id;
+            if (freeIDs.Count > 0)
             {
-                id = count;
-                count++;
+                // faster implementation of First()
+                foreach (var _id in freeIDs) { id = _id; goto done; }
+                throw new Exception();
+            done:;
+            }
+            else
+            {
+                id = nextId;
+                nextId++;
             }
             Locations[id] = new EntityLocation(container, index);
             return new Entity(id, Versions[id]);
@@ -44,7 +55,7 @@ namespace SimpleECS
             lastLocation = Locations[entity.Id];
             Locations[entity.Id] = default;
             Versions[entity.Id]++;
-            freeIDs.Enqueue(entity.Id);
+            freeIDs.Add(entity.Id);
         }
         public void MoveEntity(int entity, ArchetypeContainer newContainer, int newIndex)
         {
@@ -62,6 +73,39 @@ namespace SimpleECS
                 location = Locations[entity.Id];
                 return true;
             }
+        }
+
+        public IEnumerator<Entity> GetEnumerator() => new EntityEnumerator(this);
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        struct EntityEnumerator : IEnumerator<Entity>
+        {
+            int currentId;
+            EntityRegistry registry;
+            public Entity Current => new Entity(currentId, registry.GetVersion(currentId));
+
+            object? IEnumerator.Current => this.Current;
+
+            public EntityEnumerator(EntityRegistry registry)
+            {
+                this.currentId = -1;
+                this.registry = registry;
+            }
+
+            public void Dispose() { }
+
+            public bool MoveNext()
+            {
+                do
+                {
+                    currentId++;
+                    if (registry.nextId == currentId)
+                        return false;
+                }
+                while (registry.freeIDs.Contains(currentId));
+                return true;
+            }
+
+            public void Reset() => currentId = -1;
         }
     }
 }
