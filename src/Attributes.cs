@@ -8,4 +8,8 @@ namespace SimpleECS
     sealed class GlobalAttribute : System.Attribute
     {
     }
+    [System.AttributeUsage(System.AttributeTargets.Parameter, Inherited = false, AllowMultiple = false)]
+    sealed class ChangedAttribute : System.Attribute
+    {
+    }
 }

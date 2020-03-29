@@ -55,7 +55,12 @@ namespace SimpleECS
             var loc = LocationOrThrow();
             return loc.ArchetypeContainer.Has<T>(loc.Index);
         }
-        public ref T Get<T>() where T : struct
+        public ref readonly T Get<T>() where T : struct
+        {
+            var loc = LocationOrThrow();
+            return ref loc.ArchetypeContainer.Get<T>(loc.Index);
+        }
+        public ref T GetMutable<T>() where T : struct
         {
             var loc = LocationOrThrow();
             return ref loc.ArchetypeContainer.Get<T>(loc.Index);

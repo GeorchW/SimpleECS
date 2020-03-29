@@ -97,5 +97,38 @@ namespace SimpleECS.Test
         {
             myGlobal.Add(1);
         }
+
+        [Test]
+        public void Changed()
+        {
+            e1.Add<InvocationCounter>();
+            e2.Add<InvocationCounter>();
+            e3.Add<InvocationCounter>();
+
+            scene.Run(this, nameof(ChangedKernel));
+            foreach (var e in new[] { e1, e2, e3 })
+                Assert.That(e.Get<InvocationCounter>().Count, Is.EqualTo(1));
+
+            scene.Run(this, nameof(ChangedKernel));
+            foreach (var e in new[] { e1, e2, e3 })
+                Assert.That(e.Get<InvocationCounter>().Count, Is.EqualTo(1));
+
+            Span<int> test = stackalloc[] { 1, 2, 3 };
+
+            e3.GetMutable<ExampleComp1>().Value = "something else";
+            scene.Run(this, nameof(ChangedKernel));
+            foreach (var e in new[] { e1, e2 })
+                Assert.That(e.Get<InvocationCounter>().Count, Is.EqualTo(1));
+            Assert.That(e3.Get<InvocationCounter>().Count, Is.EqualTo(2));
+        }
+
+        struct InvocationCounter
+        {
+            public int Count;
+        }
+        void ChangedKernel([Changed] in ExampleComp1 exampleComp1, ref InvocationCounter counter)
+        {
+            counter.Count++;
+        }
     }
 }
