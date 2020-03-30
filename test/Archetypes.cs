@@ -7,7 +7,7 @@ namespace SimpleECS.Test
     struct ExampleComp2 { public string Value; }
     public class Archetypes
     {
-        Scene scene;
+        Scene scene = null!;
         Entity entity;
         [SetUp]
         public void Setup()

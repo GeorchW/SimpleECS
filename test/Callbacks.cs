@@ -7,7 +7,7 @@ namespace SimpleECS.Test
         struct DisposableComp
         {
         }
-        Scene scene;
+        Scene scene = null!;
         Entity entity;
         int deletesCalled = 0;
 
@@ -23,7 +23,7 @@ namespace SimpleECS.Test
 
             scene.Callbacks.Get(typeof(DisposableComp)).ComponentRemoved += (sender, entity) => deletesCalled++;
         }
-        
+
         [Test]
         public void OnEntityDelete()
         {

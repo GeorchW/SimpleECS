@@ -6,7 +6,7 @@ namespace SimpleECS.Test
 {
     public class Kernels
     {
-        Scene scene;
+        Scene scene = null!;
         Entity e1, e2, e3;
         [SetUp]
         public void Setup()
