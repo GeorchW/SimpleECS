@@ -6,10 +6,10 @@ namespace SimpleECS
 {
     static class SigilExtensions
     {
-        public static void For<T>(this Sigil.Emit<T> il, Sigil.Local length, Action<Sigil.Local> body)
+        public static void For<T>(this Sigil.Emit<T> il, Action getStart, Action getEnd, Action<Sigil.Local> body)
         {
             var i = il.DeclareLocal<int>("i");
-            il.LoadConstant(0);
+            getStart();
             il.StoreLocal(i);
 
             var startLoop = il.DefineLabel("start");
@@ -17,7 +17,7 @@ namespace SimpleECS
 
             il.MarkLabel(startLoop);
             il.LoadLocal(i);
-            il.LoadLocal(length);
+            getEnd();
             il.BranchIfGreaterOrEqual(endLoop);
 
             body(i);

@@ -51,6 +51,7 @@ namespace SimpleECS
                     Callbacks.TryGet(type)?.OnComponentRemoved(this, entity);
                 }
             }
+            location.ArchetypeContainer.NotifyDeleteEntity(location.Index);
             EntityRegistry.UnregisterEntity(entity, out var lastLocation);
             lastLocation.ArchetypeContainer.RemoveEntity(lastLocation.Index);
         }

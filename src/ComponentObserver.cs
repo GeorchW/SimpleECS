@@ -1,9 +1,14 @@
+using System;
 using System.Collections.Generic;
 
 namespace SimpleECS
 {
     class ComponentObserver
     {
+        public Type ObservedType { get; }
+
+        public ComponentObserver(Type observedType) => ObservedType = observedType;
+
         Dictionary<ArchetypeContainer, HashSet<int>> observedContainers = new Dictionary<ArchetypeContainer, HashSet<int>>();
         public HashSet<int>? RequestChanges(ArchetypeContainer container)
         {
@@ -12,22 +17,24 @@ namespace SimpleECS
             else
             {
                 observedContainers.Add(container, new HashSet<int>());
-                //TODO: also register with the archetype
+                
+                if (!container.Observers.TryGetValue(ObservedType, out var observers))
+                    container.Observers.Add(ObservedType, observers = new HashSet<ComponentObserver>());
+                observers.Add(this);
+
                 return null;
             }
         }
 
-        // TODO: Also notify when a component is created
-        public void Notify(ArchetypeContainer container, int location) => observedContainers[container].Add(location);
+        public void NotifyAllChanged(ArchetypeContainer container) => observedContainers.Remove(container);
+
+        public void NotifyChangeOrAdd(ArchetypeContainer container, int location) => observedContainers[container].Add(location);
 
         public void TrackMove(ArchetypeContainer oldContainer, int oldLocation, ArchetypeContainer newContainer, int newLocation)
         {
             if (observedContainers[oldContainer].Remove(oldLocation))
                 observedContainers[newContainer].Add(newLocation);
         }
-        public void TrackDelete(ArchetypeContainer oldContainer, int oldLocation)
-        {
-            observedContainers[oldContainer].Remove(oldLocation);
-        }
+        public void TrackDelete(ArchetypeContainer oldContainer, int oldLocation) => observedContainers[oldContainer].Remove(oldLocation);
     }
 }

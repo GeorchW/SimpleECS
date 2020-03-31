@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Linq;
 using System;
 using System.Reflection;
@@ -10,7 +11,7 @@ namespace SimpleECS
     {
         Dictionary<(Type, string), Delegate> kernelRunners = new Dictionary<(Type, string), Delegate>();
         delegate void SceneKernelRunner<T>(Scene scene, T obj);
-        delegate void ArchetypeKernelRunner<T>(ArchetypeContainer archetypeContainer, T obj, Scene scene);
+        delegate void ArchetypeKernelRunner<T>(ArchetypeContainer archetypeContainer, T obj, Scene scene, int start, int end);
         public void Run<T>(T obj, string kernelName, Scene scene)
         {
             if (!kernelRunners.TryGetValue((typeof(T), kernelName), out var runner))
@@ -37,6 +38,8 @@ namespace SimpleECS
             var requiredComponents = new List<Type>();
             var bannedComponents = new List<Type>();
             var createdComponents = new List<Type>();
+            var touchedComponents = new List<Type>();
+            var changedComponents = new List<Type>();
 
             Sigil.Local? _globals = null;
             Sigil.Local Globals()
@@ -91,6 +94,7 @@ namespace SimpleECS
                         throw new Exception("An entity parameter cannot be used in combination with ref, in or out.");
 
                     bool banned = param.GetCustomAttribute(typeof(BannedAttribute)) != null;
+                    bool changed = param.GetCustomAttribute(typeof(ChangedAttribute)) != null;
 
                     if (!param.IsOut)
                     {
@@ -102,8 +106,16 @@ namespace SimpleECS
                     {
                         if (banned)
                             bannedComponents.Add(elementType);
+                        if (changed)
+                            throw new Exception("Parameters can't be marked with both [Changed] and [Banned].");
                         createdComponents.Add(elementType);
                     }
+
+                    if (!param.IsIn)
+                        touchedComponents.Add(elementType);
+                    if (changed)
+                        changedComponents.Add(type);
+
                     Type arrayType = elementType.MakeArrayType();
                     var array = il.DeclareLocal(arrayType);
 
@@ -124,22 +136,40 @@ namespace SimpleECS
                 else throw new NotImplementedException();
             }).ToArray();
 
-            var length = il.DeclareLocal<int>("length");
-            il.LoadArgument(0);
-            il.Call(typeof(ArchetypeContainer).GetProperty(nameof(ArchetypeContainer.EntityCount))!.GetMethod);
-            il.StoreLocal(length);
-
-            il.For(length, i =>
-            {
-                il.LoadArgument(1);
-                foreach (var paramLoader in paramLoaders)
-                    paramLoader(i);
-                il.Call(kernel);
-            });
+            il.For(
+                () => il.LoadArgument(3),
+                () => il.LoadArgument(4),
+                i =>
+                {
+                    il.LoadArgument(1);
+                    foreach (var paramLoader in paramLoaders)
+                        paramLoader(i);
+                    il.Call(kernel);
+                });
 
             il.Return();
 
             var callerDelegate = il.CreateDelegate(out string instructions);
+
+            bool MeetsRequirements(ComponentSet.Readonly set)
+            {
+                foreach (var type in requiredComponents)
+                {
+                    if (!set.Has(type))
+                        return false;
+                }
+                foreach (var type in bannedComponents)
+                {
+                    if (set.Has(type))
+                        return false;
+                }
+                return true;
+            }
+
+            Dictionary<Type, ComponentObserver> observers
+                = changedComponents.ToDictionary(
+                    t => t,
+                    t => new ComponentObserver(t));
 
             return (scene, obj) =>
             {
@@ -149,32 +179,67 @@ namespace SimpleECS
                 bool archetypeWasManipulated = false;
                 foreach (var (set, archetype) in scene.archetypes)
                 {
-                    bool ShouldRun()
-                    {
-                        foreach (var type in requiredComponents)
-                        {
-                            if (!set.Has(type))
-                                return false;
-                        }
-                        foreach (var type in bannedComponents)
-                        {
-                            if (set.Has(type))
-                                return false;
-                        }
-                        return true;
-                    }
+                    if (!MeetsRequirements(set))
+                        continue;
 
-                    if (ShouldRun())
+                    if (changedComponents.Count != 0)
                     {
-                        foreach (var type in createdComponents)
+                        bool allChanged = false;
+                        foreach (var type in changedComponents)
                         {
-                            if (!set.Has(type))
+                            if (observers[type].RequestChanges(archetype) == null)
                             {
-                                archetype.AddComponentToAllEntities(type);
-                                archetypeWasManipulated = true;
+                                allChanged = true;
+                                break;
                             }
                         }
-                        callerDelegate(archetype, obj, scene);
+                        if (allChanged)
+                        {
+                            foreach (var type in changedComponents)
+                                observers[type].RequestChanges(archetype)?.Clear();
+                            goto call_all;
+                        }
+                        else
+                        {
+                            HashSet<int> changedIndices = new HashSet<int>();
+                            foreach (var type in changedComponents)
+                            {
+                                HashSet<int>? changes = observers[type].RequestChanges(archetype);
+                                if (changes != null)
+                                {
+                                    changedIndices.UnionWith(changes);
+                                    changes.Clear();
+                                }
+                            }
+
+                            // It should not happen that created components are not present.
+                            // If the kernel didn't run on this archetype *at all*, then
+                            // `allChanged` would've been true.
+                            foreach (var type in createdComponents)
+                                if (!set.Has(type)) throw new Exception();
+                            // call some
+                            foreach (var index in changedIndices)
+                                callerDelegate(archetype, obj, scene, index, index + 1);
+                            // notify about changes
+                            foreach (var type in touchedComponents)
+                                foreach (var index in changedIndices)
+                                    archetype.Notify(type, index);
+                            continue;
+                        }
+                    }
+                call_all:
+                    foreach (var type in createdComponents)
+                    {
+                        if (!set.Has(type))
+                        {
+                            archetype.AddComponentToAllEntities(type);
+                            archetypeWasManipulated = true;
+                        }
+                    }
+                    callerDelegate(archetype, obj, scene, 0, archetype.EntityCount);
+                    foreach (var type in touchedComponents)
+                    {
+                        archetype.NotifyAll(type);
                     }
                 }
                 if (archetypeWasManipulated)

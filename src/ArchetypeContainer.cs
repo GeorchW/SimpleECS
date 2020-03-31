@@ -14,6 +14,8 @@ namespace SimpleECS
         int highestIndex = -1;
         int capacity = 64;
 
+        internal Dictionary<Type, HashSet<ComponentObserver>> Observers = new Dictionary<Type, HashSet<ComponentObserver>>();
+
         Queue<int> freeSlots = new Queue<int>();
 
         Scene scene;
@@ -42,6 +44,7 @@ namespace SimpleECS
             {
                 if (removals.Remove((index, typeof(T))))
                 {
+                    Notify<T>(index);
                     return ref ((T[])arrays[typeof(T)])[index];
                 }
                 else throw new Exception("Component already exists");
@@ -53,12 +56,14 @@ namespace SimpleECS
                 return ref slot.Get<T>();
             }
         }
+
         public void Remove<T>(int index) where T : struct
         {
             if (additions.Remove((index, typeof(T))))
                 return;
             else if (arrays.ContainsKey(typeof(T)))
             {
+                NotifyDeleteComponent<T>(index);
                 bool success = removals.Add((index, typeof(T)));
                 throw new Exception("No such component is present; it was recently removed.");
             }
@@ -73,7 +78,15 @@ namespace SimpleECS
             else
                 return additions.ContainsKey((index, typeof(T)));
         }
-        public ref T Get<T>(int index) where T : struct
+        public ref readonly T Get<T>(int index) where T : struct => ref GetInternal<T>(index);
+        public ref T GetMutable<T>(int index) where T : struct
+        {
+            // Call GetInternal first to validate input
+            ref var result = ref GetInternal<T>(index);
+            Notify<T>(index);
+            return ref result;
+        }
+        ref T GetInternal<T>(int index) where T : struct
         {
             if (arrays.TryGetValue(typeof(T), out var array))
             {
@@ -92,12 +105,50 @@ namespace SimpleECS
             if (arrays.TryGetValue(typeof(T), out var array))
             {
                 removals.Remove((index, typeof(T)));
+                Notify<T>(index);
                 return ref ((T[])array)[index];
             }
             else if (additions.TryGetValue((index, typeof(T)), out var slot))
                 return ref slot.Get<T>();
             else
                 throw new Exception("No such component is present");
+        }
+
+        internal static void NotifyMove(ArchetypeContainer oldContainer, int oldIndex, ArchetypeContainer newContainer, int newIndex)
+        {
+            foreach (var observers in oldContainer.Observers.Values)
+            {
+                foreach (var observer in observers)
+                    observer.TrackMove(oldContainer, oldIndex, newContainer, newIndex);
+            }
+        }
+        internal void NotifyDeleteEntity(int index)
+        {
+            foreach (var observers in Observers.Values)
+                foreach (var observer in observers)
+                    observer.TrackDelete(this, index);
+        }
+
+        internal void NotifyDeleteComponent<T>(int index) where T : struct
+        {
+            if (Observers.TryGetValue(typeof(T), out var observers))
+                foreach (var observer in observers)
+                    observer.TrackDelete(this, index);
+        }
+
+        private void Notify<T>(int index) where T : struct => Notify(typeof(T), index);
+        internal void Notify(Type changed, int index)
+        {
+            if (Observers.TryGetValue(changed, out var observers))
+                foreach (var observer in observers)
+                    observer.NotifyChangeOrAdd(this, index);
+        }
+
+        internal void NotifyAll(Type type)
+        {
+            if (Observers.TryGetValue(type, out var observers))
+                foreach (var observer in observers)
+                    observer.NotifyAllChanged(this);
         }
 
         internal void RemoveEntity(int index)
@@ -163,6 +214,7 @@ namespace SimpleECS
             if (freeSlots.Count > 0)
             {
                 var indicesArray = freeSlots.ToArray();
+                //TODO: Use Span.Sort when available in .NET 5.0
                 Array.Sort(indicesArray);
                 var indices = new Span<int>(indicesArray);
                 for (int i = 0; i < indices.Length; i++)
@@ -187,6 +239,7 @@ namespace SimpleECS
                     }
                     entityIds[index] = entityIds[highestIndex];
                     entityIds[highestIndex] = -1;
+                    NotifyMove(this, highestIndex, this, index);
 
                     highestIndex--;
                 }
@@ -208,6 +261,39 @@ namespace SimpleECS
             }
 
             Array.Copy(source.entityIds, 0, target.entityIds, targetStartIndex, source.EntityCount);
+
+            HashSet<ComponentObserver> sourceObservers = CollectObservers(source);
+            HashSet<ComponentObserver> targetObservers = CollectObservers(target);
+            
+            HashSet<ComponentObserver> sharedObservers = new HashSet<ComponentObserver>(sourceObservers);
+            sharedObservers.IntersectWith(targetObservers);
+
+            foreach (var observer in sharedObservers)
+            {
+                for (int i = 0; i < source.EntityCount; i++)
+                {
+                    NotifyMove(source, i, target, i + targetStartIndex);
+                }
+            }
+
+            HashSet<ComponentObserver> exclusiveTargetObservers = new HashSet<ComponentObserver>(targetObservers);
+            exclusiveTargetObservers.ExceptWith(sourceObservers);
+            foreach (var observer in exclusiveTargetObservers)
+            {
+                for (int i = 0; i < source.EntityCount; i++)
+                {
+                    NotifyMove(source, i, target, i + targetStartIndex);
+                }
+            }
+        }
+
+        private static HashSet<ComponentObserver> CollectObservers(ArchetypeContainer source)
+        {
+            HashSet<ComponentObserver> sourceObservers = new HashSet<ComponentObserver>();
+            foreach (var observers in source.Observers.Values)
+                foreach (var observer in observers)
+                    sourceObservers.Add(observer);
+            return sourceObservers;
         }
     }
 }
