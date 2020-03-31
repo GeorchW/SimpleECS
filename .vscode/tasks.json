@@ -1,0 +1,24 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Run tests",
+            "type": "shell",
+            "command": "dotnet test",
+            "problemMatcher": [
+                "$msCompile"
+            ]
+        },
+        {
+            "label": "Run tests (watch)",
+            "type": "shell",
+            "command": "dotnet watch test",
+            "options": {
+                "cwd": "./test/"
+            },
+            "isBackground": true,
+            "problemMatcher": [],
+            "runOptions": {"runOn": "folderOpen"}
+        }
+    ]
+}
