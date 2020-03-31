@@ -25,15 +25,15 @@ namespace SimpleECS
 
         private SceneKernelRunner<T> CreateRunner<T>(string kernelName)
         {
-            var type = typeof(T);
-            MethodInfo kernel = type.GetMethod(kernelName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+            var kernelOwnerType = typeof(T);
+            MethodInfo kernel = kernelOwnerType.GetMethod(kernelName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
                 ?? throw new MissingMethodException();
 
             AssemblyBuilder asm = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("SimpleECS.Dynamic"), AssemblyBuilderAccess.Run);
             ModuleBuilder module = asm.DefineDynamicModule("SimpleECS.Dynamic (Module)");
             module.SetCustomAttribute(typeof(System.Security.UnverifiableCodeAttribute).GetConstructor(Type.EmptyTypes)!, new byte[0]);
 
-            var il = Sigil.Emit<ArchetypeKernelRunner<T>>.NewDynamicMethod($"(* Archetype caller for {type.FullName}.{kernelName} *)", module);
+            var il = Sigil.Emit<ArchetypeKernelRunner<T>>.NewDynamicMethod($"(* Archetype caller for {kernelOwnerType.FullName}.{kernelName} *)", module);
             ParameterInfo[] kernelParameters = kernel.GetParameters();
             var requiredComponents = new List<Type>();
             var bannedComponents = new List<Type>();
@@ -114,7 +114,7 @@ namespace SimpleECS
                     if (!param.IsIn)
                         touchedComponents.Add(elementType);
                     if (changed)
-                        changedComponents.Add(type);
+                        changedComponents.Add(elementType);
 
                     Type arrayType = elementType.MakeArrayType();
                     var array = il.DeclareLocal(arrayType);
