@@ -72,7 +72,7 @@ namespace SimpleECS
         }
         public void Delete() => CurrentScene.DeleteEntity(this);
 
-        public override string ToString() => Has<NameComponent>() ? Get<NameComponent>().Name : $"EID {Id} (v{Version})";
+        public override string ToString() => Has<NameComp>() ? Get<NameComp>().Name : $"EID {Id} (v{Version})";
 
         public override bool Equals(object? obj) => obj is Entity other && this == other;
         public override int GetHashCode() => (int)(BitOperations.RotateLeft((uint)Id, 16) ^ Version);
