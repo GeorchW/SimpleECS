@@ -71,7 +71,7 @@ namespace SimpleECS
                         il.LoadLocal(id);
                         var version = il.StoreInNewLocal(() => default(EntityRegistry)!.GetVersion(default), "version");
 
-                        il.WriteLine("Loaded entity {0} (v{1}) @ index {2}", id, version, index);
+                        // il.WriteLine("Loaded entity {0} (v{1}) @ index {2}", id, version, index);
 
                         il.LoadLocal(id);
                         il.LoadLocal(version);
