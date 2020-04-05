@@ -57,6 +57,26 @@ namespace SimpleECS
             }
         }
 
+        internal void Add(int index, object component)
+        {
+            Type type = component.GetType();
+            if (arrays.ContainsKey(type))
+            {
+                if (removals.Remove((index, type)))
+                {
+                    Notify(type, index);
+                    arrays[type].SetValue(component, index);
+                }
+                else throw new Exception("Component already exists");
+            }
+            else
+            {
+                var slot = scene.GetStorage(type);
+                additions.Add((index, type), slot);
+                slot.Set(component);
+            }
+        }
+
         public void Remove<T>(int index) where T : struct
         {
             if (additions.Remove((index, typeof(T))))

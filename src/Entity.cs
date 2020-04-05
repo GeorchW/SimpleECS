@@ -1,6 +1,7 @@
 using System.Linq;
 using System;
 using System.Numerics;
+using System.Collections.Generic;
 
 namespace SimpleECS
 {
@@ -16,14 +17,14 @@ namespace SimpleECS
         /// <summary>
         /// Lists all components in this entity, excluding recently added ones.
         /// </summary>
-        [Obsolete("Do not use this property for non-debugging purposes - performance might be poor and it might give incorrect results.")]
-        public object[] Components
+        [Obsolete("Do not use this property for non-debugging purposes - performance might be poor and it might give incorrect results. "
+            + "If you intended to enumerate all components after having called Scene.InsertNewComponents, call GetComponentsUnsafe instead.", true)]
+        public object[] Components => GetComponentsUnsafe().ToArray();
+
+        public IEnumerable<object> GetComponentsUnsafe()
         {
-            get
-            {
-                var loc = LocationOrThrow();
-                return LocationOrThrow().ArchetypeContainer.arrays.Values.Select(array => array.GetValue(loc.Index)!).ToArray();
-            }
+            var loc = LocationOrThrow();
+            return loc.ArchetypeContainer.arrays.Values.Select(array => array.GetValue(loc.Index)!);
         }
 
         internal Entity(int id, int version)
@@ -75,6 +76,13 @@ namespace SimpleECS
         public override string ToString() => Has<NameComp>() ? Get<NameComp>().Name : $"EID {Id} (v{Version})";
 
         public override bool Equals(object? obj) => obj is Entity other && this == other;
+
+        internal void Add(object component)
+        {
+            var loc = LocationOrThrow();
+            loc.ArchetypeContainer.Add(loc.Index, component);
+        }
+
         public override int GetHashCode() => (int)(BitOperations.RotateLeft((uint)Id, 16) ^ Version);
         public static bool operator ==(Entity left, Entity right) => left.Id == right.Id && left.Version == right.Version;
         public static bool operator !=(Entity left, Entity right) => !(left == right);

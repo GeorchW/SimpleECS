@@ -12,7 +12,8 @@ namespace SimpleECS
             this.array = array;
             this.index = index;
         }
-        public ref T Get<T>() where T:struct => ref ((T[])array)[index];
+        public ref T Get<T>() where T : struct => ref ((T[])array)[index];
         public void CopyTo(Array targetArray, int targetIndex) => Array.Copy(array, index, targetArray, targetIndex, 1);
+        internal void Set(object component) => array.SetValue(component, index);
     }
 }
