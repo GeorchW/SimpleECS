@@ -224,5 +224,8 @@ namespace SimpleECS
 
         KernelRunner kernelRunner = new KernelRunner();
         public void Run<T>(T obj, string kernelName) => kernelRunner.Run(obj, kernelName, this);
+
+        public string ToJson(bool indent = true) => SceneJsonSerializer.ToJson(this, indent);
+        public static Scene FromJson(string json) => SceneJsonSerializer.FromJson(json);
     }
 }
