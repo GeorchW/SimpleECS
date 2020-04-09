@@ -26,6 +26,12 @@ namespace SimpleECS
             Entity.CurrentScene = this;
         }
 
+        public Entity CreateEntity(string name)
+        {
+            var entity = CreateEntity();
+            entity.Add<NameComp>().Name = name;
+            return entity;
+        }
         public Entity CreateEntity()
         {
             var entity = EntityRegistry.RegisterEntity(InitialContainer, 0);
