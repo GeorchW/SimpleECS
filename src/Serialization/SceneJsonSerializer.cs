@@ -11,7 +11,7 @@ namespace SimpleECS
         public static string ToJson(Scene scene, bool indent = true)
         {
             scene.InsertNewComponents();
-            var allTypes = scene.archetypes.Values.SelectMany(a => a.arrays.Keys);
+            var allTypes = scene.archetypes.Values.SelectMany(a => a.arrays.Keys).Distinct();
 
             var stringToType = AssignFreshNames(allTypes, type => type.Name);
             var typeToString = Invert(stringToType);
@@ -75,6 +75,7 @@ namespace SimpleECS
                 }
             }
 
+            scene.InsertNewComponents();
             return scene;
         }
 
