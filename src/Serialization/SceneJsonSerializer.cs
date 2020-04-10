@@ -11,7 +11,10 @@ namespace SimpleECS
         public static string ToJson(Scene scene, bool indent = true)
         {
             scene.InsertNewComponents();
-            var allTypes = scene.archetypes.Values.SelectMany(a => a.arrays.Keys).Distinct();
+            var allTypes = scene.archetypes.Values
+                .SelectMany(archetype => archetype.arrays.Keys)
+                .Distinct()
+                .Where(type => typeof(ISerializableComponent).IsAssignableFrom(type));
 
             var stringToType = AssignFreshNames(allTypes, type => type.Name);
             var typeToString = Invert(stringToType);
@@ -22,7 +25,9 @@ namespace SimpleECS
 
             var serializedEntities = scene.ToDictionary(
                 entity => entityToString[entity],
-                entity => entity.GetComponentsUnsafe().ToDictionary(comp => typeToString[comp.GetType()])
+                entity => entity.GetComponentsUnsafe()
+                    .Where(comp => typeToString.ContainsKey(comp.GetType()))
+                    .ToDictionary(comp => typeToString[comp.GetType()])
             );
 
             var serializedObject = new
