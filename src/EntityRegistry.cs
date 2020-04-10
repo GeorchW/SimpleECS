@@ -19,7 +19,8 @@ namespace SimpleECS
         }
 
         private const int InitialCapacity = 512;
-        EntityLocation[] Locations = new EntityLocation[InitialCapacity];
+        int[] entityArchetypes = new int[InitialCapacity];
+        int[] entityIndices = new int[InitialCapacity];
         int[] Versions = new int[InitialCapacity];
         HashSet<int> freeIDs = new HashSet<int>();
         int nextId = 0;
@@ -30,8 +31,13 @@ namespace SimpleECS
 
         public Entity RegisterEntity(ArchetypeContainer container, int index)
         {
-            if (nextId == Locations.Length)
-                Array.Resize(ref Locations, Locations.Length * 2);
+            if (nextId == entityArchetypes.Length)
+            {
+                int newSize = entityArchetypes.Length * 2;
+                Array.Resize(ref entityArchetypes, newSize);
+                Array.Resize(ref entityIndices, newSize);
+                Array.Resize(ref Versions, newSize);
+            }
             int id;
             if (freeIDs.Count > 0)
             {
@@ -45,21 +51,24 @@ namespace SimpleECS
                 id = nextId;
                 nextId++;
             }
-            Locations[id] = new EntityLocation(container, index);
+            entityArchetypes[id] = container.ID;
+            entityIndices[id] = index;
             return new Entity(id, Versions[id]);
         }
         public void UnregisterEntity(Entity entity, out EntityLocation lastLocation)
         {
             if (entity.Version != Versions[entity.Id])
                 throw new Exception("The entity was already deleted.");
-            lastLocation = Locations[entity.Id];
-            Locations[entity.Id] = default;
+            lastLocation = GetLocation(entity);
+            entityArchetypes[entity.Id] = 0;
+            entityIndices[entity.Id] = 0;
             Versions[entity.Id]++;
             freeIDs.Add(entity.Id);
         }
         public void MoveEntity(int entity, ArchetypeContainer newContainer, int newIndex)
         {
-            Locations[entity] = new EntityLocation(newContainer, newIndex);
+            entityArchetypes[entity] = newContainer.ID;
+            entityIndices[entity] = newIndex;
         }
         public bool TryGetLocation(Entity entity, out EntityLocation location)
         {
@@ -70,10 +79,15 @@ namespace SimpleECS
             }
             else
             {
-                location = Locations[entity.Id];
+                location = GetLocation(entity);
                 return true;
             }
         }
+
+        private EntityLocation GetLocation(Entity entity) 
+            => new EntityLocation(
+                ArchetypeContainer.GetById(entityArchetypes[entity.Id])!, 
+                entityIndices[entity.Id]);
 
         public IEnumerator<Entity> GetEnumerator() => new EntityEnumerator(this);
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();

@@ -1,11 +1,29 @@
+using System.Threading;
 using System.Linq;
 using System.Collections.Generic;
 using System;
+using System.Collections.Concurrent;
 
 namespace SimpleECS
 {
     class ArchetypeContainer
     {
+        static ConcurrentDictionary<int, WeakReference<ArchetypeContainer>> archetypesById = new ConcurrentDictionary<int, WeakReference<ArchetypeContainer>>();
+
+        public static ArchetypeContainer? GetById(int id)
+        {
+            if (archetypesById.TryGetValue(id, out var weakReference))
+            {
+                if (weakReference.TryGetTarget(out var target))
+                    return target;
+                else
+                    archetypesById.Remove(id, out _);
+            }
+            return null;
+        }
+        public int ID { get; }
+        static int highestArchetypeId;
+
         internal Dictionary<Type, Array> arrays = new Dictionary<Type, Array>();
         internal Dictionary<(int, Type), ArrayElementRef> additions = new Dictionary<(int, Type), ArrayElementRef>();
         internal HashSet<(int, Type)> removals = new HashSet<(int, Type)>();
@@ -22,6 +40,10 @@ namespace SimpleECS
 
         internal ArchetypeContainer(Scene scene)
         {
+            ID = Interlocked.Increment(ref highestArchetypeId);
+            if(!archetypesById.TryAdd(ID, new WeakReference<ArchetypeContainer>(this)))
+                throw new Exception();
+
             this.scene = scene;
             entityIds = new int[capacity];
         }
