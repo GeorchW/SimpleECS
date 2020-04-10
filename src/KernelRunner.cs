@@ -92,6 +92,7 @@ namespace SimpleECS
                     Type elementType = param.ParameterType.GetElementType()!;
                     if (elementType == typeof(Entity))
                         throw new Exception("An entity parameter cannot be used in combination with ref, in or out.");
+                    ComponentHelpers.AssertIsComponentType(elementType);
 
                     bool banned = param.GetCustomAttribute(typeof(BannedAttribute)) != null;
                     bool changed = param.GetCustomAttribute(typeof(ChangedAttribute)) != null;

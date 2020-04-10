@@ -28,6 +28,7 @@ namespace SimpleECS
 
         public void AddComponentToAllEntities(Type componentType)
         {
+            ComponentHelpers.AssertIsComponentType(componentType);
             arrays.Add(componentType, Array.CreateInstance(componentType, capacity));
         }
 
@@ -60,6 +61,7 @@ namespace SimpleECS
         internal void Add(int index, object component)
         {
             Type type = component.GetType();
+            ComponentHelpers.AssertIsComponentType(type);
             if (arrays.ContainsKey(type))
             {
                 if (removals.Remove((index, type)))
@@ -284,7 +286,7 @@ namespace SimpleECS
 
             HashSet<ComponentObserver> sourceObservers = CollectObservers(source);
             HashSet<ComponentObserver> targetObservers = CollectObservers(target);
-            
+
             HashSet<ComponentObserver> sharedObservers = new HashSet<ComponentObserver>(sourceObservers);
             sharedObservers.IntersectWith(targetObservers);
 
