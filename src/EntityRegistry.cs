@@ -53,11 +53,12 @@ namespace SimpleECS
             }
             entityArchetypes[id] = container.ID;
             entityIndices[id] = index;
+            Versions[id]++;
             return new Entity(id, Versions[id]);
         }
         public void UnregisterEntity(Entity entity, out EntityLocation lastLocation)
         {
-            if (entity.Version != Versions[entity.Id])
+            if (!IsValid(entity))
                 throw new Exception("The entity was already deleted.");
             lastLocation = GetLocation(entity);
             entityArchetypes[entity.Id] = 0;
@@ -72,7 +73,7 @@ namespace SimpleECS
         }
         public bool TryGetLocation(Entity entity, out EntityLocation location)
         {
-            if (Versions[entity.Id] != entity.Version)
+            if (!IsValid(entity))
             {
                 location = default;
                 return false;
@@ -83,6 +84,9 @@ namespace SimpleECS
                 return true;
             }
         }
+
+        private bool IsValid(Entity entity) 
+            => entity.Version != 0 && Versions[entity.Id] == entity.Version;
 
         private EntityLocation GetLocation(Entity entity) 
             => new EntityLocation(

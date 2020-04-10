@@ -61,5 +61,10 @@ namespace SimpleECS.Test
         {
             Assert.That(scene, Is.EquivalentTo(new[] { entity }));
         }
+        [Test]
+        public void DefaultIsInvalid()
+        {
+            Assert.False(default(Entity).IsValid);
+        }
     }
 }
