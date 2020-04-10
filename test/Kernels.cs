@@ -122,7 +122,7 @@ namespace SimpleECS.Test
             Assert.That(e3.Get<InvocationCounter>().Count, Is.EqualTo(2));
         }
 
-        struct InvocationCounter
+        struct InvocationCounter : IComponent
         {
             public int Count;
         }

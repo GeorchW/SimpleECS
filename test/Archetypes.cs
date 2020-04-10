@@ -3,8 +3,8 @@ using NUnit.Framework;
 
 namespace SimpleECS.Test
 {
-    struct ExampleComp1 { public string Value; }
-    struct ExampleComp2 { public string Value; }
+    struct ExampleComp1 : ISerializableComponent { public string Value; }
+    struct ExampleComp2 : ISerializableComponent { public string Value; }
     public class Archetypes
     {
         Scene scene = null!;

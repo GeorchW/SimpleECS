@@ -38,7 +38,7 @@ namespace SimpleECS
                 throw new Exception("The component is not present on this archetype.");
         }
 
-        public ref T Add<T>(int index) where T : struct
+        public ref T Add<T>(int index) where T : struct, IComponent
         {
             if (arrays.ContainsKey(typeof(T)))
             {
@@ -77,7 +77,7 @@ namespace SimpleECS
             }
         }
 
-        public void Remove<T>(int index) where T : struct
+        public void Remove<T>(int index) where T : struct, IComponent
         {
             if (additions.Remove((index, typeof(T))))
                 return;
@@ -91,22 +91,22 @@ namespace SimpleECS
                 throw new Exception("No such component is present");
 
         }
-        public bool Has<T>(int index) where T : struct
+        public bool Has<T>(int index) where T : struct, IComponent
         {
             if (arrays.ContainsKey(typeof(T)))
                 return !removals.Contains((index, typeof(T)));
             else
                 return additions.ContainsKey((index, typeof(T)));
         }
-        public ref readonly T Get<T>(int index) where T : struct => ref GetInternal<T>(index);
-        public ref T GetMutable<T>(int index) where T : struct
+        public ref readonly T Get<T>(int index) where T : struct, IComponent => ref GetInternal<T>(index);
+        public ref T GetMutable<T>(int index) where T : struct, IComponent
         {
             // Call GetInternal first to validate input
             ref var result = ref GetInternal<T>(index);
             Notify<T>(index);
             return ref result;
         }
-        ref T GetInternal<T>(int index) where T : struct
+        ref T GetInternal<T>(int index) where T : struct, IComponent
         {
             if (arrays.TryGetValue(typeof(T), out var array))
             {
@@ -120,7 +120,7 @@ namespace SimpleECS
             else
                 throw new Exception("No such component is present");
         }
-        public ref T GetOrAdd<T>(int index) where T : struct
+        public ref T GetOrAdd<T>(int index) where T : struct, IComponent
         {
             if (arrays.TryGetValue(typeof(T), out var array))
             {
@@ -149,14 +149,14 @@ namespace SimpleECS
                     observer.TrackDelete(this, index);
         }
 
-        internal void NotifyDeleteComponent<T>(int index) where T : struct
+        internal void NotifyDeleteComponent<T>(int index) where T : struct, IComponent
         {
             if (Observers.TryGetValue(typeof(T), out var observers))
                 foreach (var observer in observers)
                     observer.TrackDelete(this, index);
         }
 
-        private void Notify<T>(int index) where T : struct => Notify(typeof(T), index);
+        private void Notify<T>(int index) where T : struct, IComponent => Notify(typeof(T), index);
         internal void Notify(Type changed, int index)
         {
             if (Observers.TryGetValue(changed, out var observers))

@@ -40,33 +40,33 @@ namespace SimpleECS
             return location;
         }
 
-        public ref T Add<T>() where T : struct
+        public ref T Add<T>() where T : struct, IComponent
         {
             var loc = LocationOrThrow();
             return ref loc.ArchetypeContainer.Add<T>(loc.Index);
         }
-        public void Remove<T>() where T : struct
+        public void Remove<T>() where T : struct, IComponent
         {
             var loc = LocationOrThrow();
             CurrentScene.Callbacks.Get(typeof(T)).OnComponentRemoved(CurrentScene, this);
             loc.ArchetypeContainer.Remove<T>(loc.Index);
         }
-        public bool Has<T>() where T : struct
+        public bool Has<T>() where T : struct, IComponent
         {
             var loc = LocationOrThrow();
             return loc.ArchetypeContainer.Has<T>(loc.Index);
         }
-        public ref readonly T Get<T>() where T : struct
+        public ref readonly T Get<T>() where T : struct, IComponent
         {
             var loc = LocationOrThrow();
             return ref loc.ArchetypeContainer.Get<T>(loc.Index);
         }
-        public ref T GetMutable<T>() where T : struct
+        public ref T GetMutable<T>() where T : struct, IComponent
         {
             var loc = LocationOrThrow();
             return ref loc.ArchetypeContainer.GetMutable<T>(loc.Index);
         }
-        public ref T GetOrAdd<T>() where T : struct
+        public ref T GetOrAdd<T>() where T : struct, IComponent
         {
             var loc = LocationOrThrow();
             return ref loc.ArchetypeContainer.GetOrAdd<T>(loc.Index);

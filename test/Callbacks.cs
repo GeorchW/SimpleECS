@@ -4,7 +4,7 @@ namespace SimpleECS.Test
 {
     public class Callbacks
     {
-        struct DisposableComp
+        struct DisposableComp : IComponent
         {
         }
         Scene scene = null!;

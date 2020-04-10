@@ -49,7 +49,7 @@ namespace SimpleECS.Test
             Assert.That(newEntity.Get<NameComp>().Name, Is.EqualTo("MyEntity"));
         }
 
-        struct EntityReferenceComp
+        struct EntityReferenceComp : ISerializableComponent
         {
             public Entity Other;
         }
