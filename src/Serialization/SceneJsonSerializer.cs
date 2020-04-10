@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 
 namespace SimpleECS
@@ -40,6 +41,7 @@ namespace SimpleECS
             entityConverter.entityToString = entityToString;
             JsonSerializerSettings jsonSerializerSettings = new JsonSerializerSettings();
             jsonSerializerSettings.Converters.Add(entityConverter);
+            jsonSerializerSettings.Converters.Add(new StringEnumConverter());
             jsonSerializerSettings.Formatting = indent ? Formatting.Indented : Formatting.None;
             return JsonConvert.SerializeObject(serializedObject, jsonSerializerSettings);
         }
