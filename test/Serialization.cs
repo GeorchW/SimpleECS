@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -45,7 +46,7 @@ namespace SimpleECS.Test
             Assert.That(newScene.Count, Is.EqualTo(1));
 
             var newEntity = newScene.Single();
-            Assert.That(newEntity.GetComponentsUnsafe().Count(), Is.EqualTo(1));
+            AssertEntityHasComponents(newEntity, typeof(NameComp));
             Assert.That(newEntity.Get<NameComp>().Name, Is.EqualTo("MyEntity"));
         }
 
@@ -69,7 +70,29 @@ namespace SimpleECS.Test
             Entity.CurrentScene = newScene;
             var newA = newScene.Where(e => e.Get<NameComp>().Name == "a").Single();
             var newB = newScene.Where(e => e.Get<NameComp>().Name == "b").Single();
+            AssertEntityHasComponents(newA, typeof(NameComp), typeof(EntityReferenceComp));
+            AssertEntityHasComponents(newB, typeof(NameComp));
             Assert.That(newA.Get<EntityReferenceComp>().Other, Is.EqualTo(newB));
+        }
+
+        struct NonSerializedComp : IComponent { }
+        [Test]
+        public void IComponentsAreNotSerialized()
+        {
+            Scene scene = new Scene();
+            Entity entity = scene.CreateEntity("MyEntity");
+            entity.Add<NonSerializedComp>();
+
+            var json = SceneJsonSerializer.ToJson(scene);
+            var newScene = SceneJsonSerializer.FromJson(json);
+
+            AssertEntityHasComponents(entity, typeof(NameComp));
+        }
+        void AssertEntityHasComponents(Entity entity, params Type[] componentTypes)
+        {
+            Assert.That(
+                entity.GetComponentsUnsafe().Select(x => x.GetType()),
+                Is.EquivalentTo(componentTypes));
         }
     }
 }
