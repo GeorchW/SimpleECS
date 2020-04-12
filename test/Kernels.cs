@@ -71,6 +71,22 @@ namespace SimpleECS.Test
         }
 
         [Test]
+        public void BannedAttribute()
+        {
+            scene.Run(this, nameof(BannedAttributeKernel));
+
+            Assert.That(e1.Get<ExampleComp2>().Value, Is.EqualTo($"Entity{e1.Id} Comp2 initial value"));
+            Assert.That(e2.Get<ExampleComp2>().Value, Is.EqualTo($"Entity{e2.Id} Comp2 initial value"));
+            Assert.That(e3.Get<ExampleComp2>().Value, Is.EqualTo($"Entity{e3.Id} Comp1 initial value"));
+        }
+
+        [BannedComponent(typeof(ExampleComp2))]
+        void BannedAttributeKernel(in ExampleComp1 exampleComp1, out ExampleComp2 exampleComp2)
+        {
+            exampleComp2 = new ExampleComp2 { Value = exampleComp1.Value };
+        }
+
+        [Test]
         public void WithEntity()
         {
             scene.Run(this, nameof(EntityKernel));

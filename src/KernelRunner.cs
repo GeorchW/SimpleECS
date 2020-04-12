@@ -41,6 +41,11 @@ namespace SimpleECS
             var touchedComponents = new List<Type>();
             var changedComponents = new List<Type>();
 
+            if(kernel.GetCustomAttribute(typeof(BannedComponentAttribute)) is BannedComponentAttribute attr)
+            {
+                bannedComponents.AddRange(attr.Components);
+            }
+
             Sigil.Local? _globals = null;
             Sigil.Local Globals()
             {
