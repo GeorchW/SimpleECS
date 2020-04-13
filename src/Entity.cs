@@ -77,7 +77,7 @@ namespace SimpleECS
 
         public override bool Equals(object? obj) => obj is Entity other && this == other;
 
-        internal void Add(object component)
+        public void Add(object component)
         {
             var loc = LocationOrThrow();
             loc.ArchetypeContainer.Add(loc.Index, component);
