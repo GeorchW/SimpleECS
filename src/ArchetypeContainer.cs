@@ -41,7 +41,7 @@ namespace SimpleECS
         internal ArchetypeContainer(Scene scene)
         {
             ID = Interlocked.Increment(ref highestArchetypeId);
-            if(!archetypesById.TryAdd(ID, new WeakReference<ArchetypeContainer>(this)))
+            if (!archetypesById.TryAdd(ID, new WeakReference<ArchetypeContainer>(this)))
                 throw new Exception();
 
             this.scene = scene;
@@ -152,10 +152,12 @@ namespace SimpleECS
                 Notify<T>(index);
                 return ref ((T[])array)[index];
             }
-            else if (additions.TryGetValue((index, typeof(T)), out var slot))
-                return ref slot.Get<T>();
-            else
-                throw new Exception("No such component is present");
+            if (!additions.TryGetValue((index, typeof(T)), out var slot))
+            {
+                slot = scene.GetStorage(typeof(T));
+                additions.Add((index, typeof(T)), slot);
+            }
+            return ref slot.Get<T>();
         }
 
         internal static void NotifyMove(ArchetypeContainer oldContainer, int oldIndex, ArchetypeContainer newContainer, int newIndex)
