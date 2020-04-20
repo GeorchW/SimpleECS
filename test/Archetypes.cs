@@ -31,6 +31,16 @@ namespace SimpleECS.Test
             Assert.That(entity.Get<ExampleComp2>().Value, Is.EqualTo("Comp2 initial value"));
         }
 
+        [TestCase(true), TestCase(false)]
+        public void ComponentRemove(bool update)
+        {
+            entity.Add<NameComp>();
+            if (update)
+                scene.InsertNewComponents();
+            entity.Remove<NameComp>();
+            Assert.That(entity.Has<NameComp>(), Is.False);
+        }
+
         [TestCase(false), TestCase(true)]
         public void EntityDelete(bool update)
         {

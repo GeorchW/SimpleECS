@@ -109,7 +109,8 @@ namespace SimpleECS
             {
                 NotifyDeleteComponent<T>(index);
                 bool success = removals.Add((index, typeof(T)));
-                throw new Exception("No such component is present; it was recently removed.");
+                if (!success)
+                    throw new Exception("No such component is present; it was recently removed.");
             }
             else
                 throw new Exception("No such component is present");
