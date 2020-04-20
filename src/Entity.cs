@@ -73,7 +73,14 @@ namespace SimpleECS
         }
         public void Delete() => CurrentScene.DeleteEntity(this);
 
-        public override string ToString() => Has<NameComp>() ? Get<NameComp>().Name : $"EID {Id} (v{Version})";
+        public override string ToString()
+        {
+            if(!IsValid)
+                return "<invalid entity>";
+            else if(Has<NameComp>())
+                return Get<NameComp>().Name;
+            return $"EID {Id} (v{Version})";
+        }
 
         public override bool Equals(object? obj) => obj is Entity other && this == other;
 
