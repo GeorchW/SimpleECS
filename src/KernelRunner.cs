@@ -193,7 +193,7 @@ namespace SimpleECS
                         bool allChanged = false;
                         foreach (var type in changedComponents)
                         {
-                            if (observers[type].RequestChanges(archetype) == null)
+                            if (observers[type].GetDirtyIndices(archetype) == null)
                             {
                                 allChanged = true;
                                 break;
@@ -202,7 +202,7 @@ namespace SimpleECS
                         if (allChanged)
                         {
                             foreach (var type in changedComponents)
-                                observers[type].RequestChanges(archetype)?.Clear();
+                                observers[type].Clear(archetype);
                             goto call_all;
                         }
                         else
@@ -210,12 +210,8 @@ namespace SimpleECS
                             HashSet<int> changedIndices = new HashSet<int>();
                             foreach (var type in changedComponents)
                             {
-                                HashSet<int>? changes = observers[type].RequestChanges(archetype);
-                                if (changes != null)
-                                {
-                                    changedIndices.UnionWith(changes);
-                                    changes.Clear();
-                                }
+                                HashSet<int> changes = observers[type].GetDirtyIndices(archetype)!;
+                                changedIndices.UnionWith(changes);
                             }
 
                             // It should not happen that created components are not present.
@@ -223,13 +219,19 @@ namespace SimpleECS
                             // `allChanged` would've been true.
                             foreach (var type in createdComponents)
                                 if (!set.Has(type)) throw new Exception();
+
                             // call some
                             foreach (var index in changedIndices)
                                 callerDelegate(archetype, obj, scene, index, index + 1);
-                            // notify about changes
+
+                            // notify others about changes
                             foreach (var type in touchedComponents)
                                 foreach (var index in changedIndices)
                                     archetype.Notify(type, index);
+                                    
+                            // clear own observed changes
+                            foreach (var observer in observers.Values)
+                                observer.Clear(archetype);
                             continue;
                         }
                     }
