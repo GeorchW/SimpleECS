@@ -1,3 +1,4 @@
+using System.Text;
 using System.Threading;
 using System.Linq;
 using System.Collections.Generic;
@@ -46,6 +47,15 @@ namespace SimpleECS
 
             this.scene = scene;
             entityIds = new int[capacity];
+        }
+
+        public override string ToString()
+        {
+            var fullNames = arrays.Keys.Select(x => x.FullName).OrderBy(x => x);
+            var fullNamesHash = System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(string.Join('\n', fullNames)));
+            var fullNamesHashHex = BitConverter.ToUInt16(fullNamesHash.AsSpan()[..2]).ToString("x4");
+
+            return $"ArchetypeContainer {ID} (type hash {fullNamesHashHex}), types: {string.Join(", ", arrays.Keys.Select(x => x.Name))}";
         }
 
         public void AddComponentToAllEntities(Type componentType)
